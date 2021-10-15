@@ -20,7 +20,7 @@
 /**
  * 
  */
-class VREXPPLUGINEXAMPLE_API EmptyClassForProject
+class FINDEMMA_API EmptyClassForProject
 {
 public:
 	EmptyClassForProject();

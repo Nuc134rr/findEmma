@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class VRExpPluginExample : ModuleRules
+public class findEmma : ModuleRules
 {
-	public VRExpPluginExample(ReadOnlyTargetRules Target) : base(Target)
+	public findEmma(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
        // PrivatePCHHeaderFile = "Private/WindowsMixedRealityPrecompiled.h";

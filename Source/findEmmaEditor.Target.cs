@@ -3,14 +3,14 @@
 using UnrealBuildTool;
 using System.Collections.Generic;
 
-public class VRExpPluginExampleEditorTarget : TargetRules
+public class findEmmaEditorTarget : TargetRules
 {
-	public VRExpPluginExampleEditorTarget(TargetInfo Target) : base(Target)
+	public findEmmaEditorTarget(TargetInfo Target) : base(Target)
 	{
         DefaultBuildSettings = BuildSettingsVersion.V2;
 
         Type = TargetType.Editor;
-        ExtraModuleNames.AddRange(new string[] { "VRExpPluginExample" });
+        ExtraModuleNames.AddRange(new string[] { "findEmma" });
 		//bUseUnityBuild = false;
 		//bUsePCHFiles = false;
     }
@@ -25,6 +25,6 @@ public class VRExpPluginExampleEditorTarget : TargetRules
 		ref List<string> OutExtraModuleNames
 		)
 	{
-		OutExtraModuleNames.AddRange( new string[] { "VRExpPluginExample" } );
+		OutExtraModuleNames.AddRange( new string[] { "findEmma" } );
 	}*/
 }

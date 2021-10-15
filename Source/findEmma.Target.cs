@@ -3,16 +3,16 @@
 using UnrealBuildTool;
 using System.Collections.Generic;
 
-public class VRExpPluginExampleTarget : TargetRules
+public class findEmmaTarget : TargetRules
 {
-	public VRExpPluginExampleTarget(TargetInfo Target) : base(Target)
+	public findEmmaTarget(TargetInfo Target) : base(Target)
 	{
 
         DefaultBuildSettings = BuildSettingsVersion.V2;
 
         //bUseLoggingInShipping = true;
         Type = TargetType.Game;
-        ExtraModuleNames.AddRange(new string[] { "VRExpPluginExample" });
+        ExtraModuleNames.AddRange(new string[] { "findEmma" });
         //bUsePCHFiles = false;
         //bUseUnityBuild = false;
 
@@ -55,6 +55,6 @@ public class VRExpPluginExampleTarget : TargetRules
 		ref List<string> OutExtraModuleNames
 		)
 	{
-		OutExtraModuleNames.AddRange( new string[] { "VRExpPluginExample" } );
+		OutExtraModuleNames.AddRange( new string[] { "findEmma" } );
 	}*/
 }
