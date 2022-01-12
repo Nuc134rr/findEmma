@@ -1,0 +1,49 @@
+day 1:
+wake up (done)
+see notepad (done, move on master level)
+do O2, Radio, and gene (done-ish, needs revisions before final)
+Flashback w/ drawing and mug (done enough)
+No Emma Room (you have PTSD) (needs to be done, with doors)
+notepad checked off (sound effect here + visuals) except Find Emma (need Find Emma task and sound effect)
+new task: go to bed (done)
+
+day 2:
+wake up
+see notepad
+do beans, vent (in emma's room (sound que??)), and Radio (vent could use some refining)
+flashback in emmas room w/ floppy and bed (done enough)
+scarysound.wav (needed)
+notebook blah blah yada yada
+go to bed
+
+day 3:
+wake up
+see notepad and broken vent
+option task of flushing pipes out, see black smog on vent in main room (need smog particle effect (conlen?))
+dont actaulyl fix said vent, enter stage right radio guy (good enough for playtest)
+switchboard.mp4 + scarysound2.wav (sound effect needed)
+biglightsandgas.jpg (lighting effects need to be done)
+LossCon.uasset (done, record sound effects for cough and thump for falling)
+Wake_Up.uasset (done)
+getoutofmyhead.txt
+grab axe
+gtfo
+
+day 3 pt 2 (day 4):
+sun.gif
+big open space (scarysound3.wav)
+The Fucker
+lunge
+kill
+dubski
+the child is dead (finally)
+You Found Emma
+roll credits
+big dubski
+
+
+shit that needs fixing:
+-origin on door needs to be offset to the left for opening timeline
+-can needs to be 2 assets (can and lid)
+-maybe rework generator task (maybe ripcord to turn it on? completely optional)
+-ugly bunker texture needs to be higher res
