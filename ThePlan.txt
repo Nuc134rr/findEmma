@@ -45,5 +45,5 @@ big dubski
 shit that needs fixing:
 -origin on door needs to be offset to the left for opening timeline
 -can needs to be 2 assets (can and lid)
--maybe rework generator task (maybe ripcord to turn it on?)
+-maybe rework generator task (maybe ripcord to turn it on? completely optional)
 -ugly bunker texture needs to be higher res
