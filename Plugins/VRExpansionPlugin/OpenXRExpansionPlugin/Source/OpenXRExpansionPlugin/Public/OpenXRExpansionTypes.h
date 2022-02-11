@@ -7,7 +7,8 @@
 #include "UObject/Object.h"
 #include "Engine/EngineTypes.h"
 
-#include "OpenXRExpansionTypes.Generated.h"
+#include <OpenXRExpansionTypes.generated.h>
+
 
 UENUM(BlueprintType)
 enum class EVRSkeletalHandIndex : uint8
