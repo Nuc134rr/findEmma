@@ -12,7 +12,7 @@
 					"path": "/user/hand/left/input/joystick",
 					"inputs":
 					{
-						"touch":
+						"click":
 						{
 							"output": "/actions/main/in/TeleportLeft"
 						}
@@ -23,7 +23,7 @@
 					"path": "/user/hand/right/input/joystick",
 					"inputs":
 					{
-						"touch":
+						"click":
 						{
 							"output": "/actions/main/in/TeleportRight"
 						}
@@ -52,7 +52,7 @@
 					}
 				},
 				{
-					"mode": "button",
+					"mode": "trigger",
 					"path": "/user/hand/left/input/grip",
 					"inputs":
 					{
@@ -63,7 +63,7 @@
 					}
 				},
 				{
-					"mode": "button",
+					"mode": "trigger",
 					"path": "/user/hand/right/input/grip",
 					"inputs":
 					{
@@ -78,7 +78,7 @@
 					"path": "/user/hand/right/input/b",
 					"inputs":
 					{
-						"touch":
+						"click":
 						{
 							"output": "/actions/main/in/LaserBeamRight"
 						}
@@ -96,7 +96,7 @@
 					}
 				},
 				{
-					"mode": "button",
+					"mode": "trigger",
 					"path": "/user/hand/left/input/trigger",
 					"inputs":
 					{
@@ -107,7 +107,7 @@
 					}
 				},
 				{
-					"mode": "button",
+					"mode": "trigger",
 					"path": "/user/hand/right/input/trigger",
 					"inputs":
 					{
@@ -119,23 +119,12 @@
 				},
 				{
 					"mode": "button",
-					"path": "/user/hand/left/input/trigger",
+					"path": "/user/hand/left/input/x",
 					"inputs":
 					{
 						"click":
 						{
-							"output": "/actions/main/in/TriggerInteractionLEft"
-						}
-					}
-				},
-				{
-					"mode": "button",
-					"path": "/user/hand/right/input/trigger",
-					"inputs":
-					{
-						"click":
-						{
-							"output": "/actions/main/in/TriggerInteractionRight"
+							"output": "/actions/main/in/ToggleMovementMode"
 						}
 					}
 				},
@@ -158,28 +147,6 @@
 						"position":
 						{
 							"output": "/actions/main/in/MotionControllerThumbRight_X,MotionControllerThumbRight_Y X Y_axis2d"
-						}
-					}
-				},
-				{
-					"mode": "scalar_constant",
-					"path": "/user/hand/left/input/joystick",
-					"inputs":
-					{
-						"value":
-						{
-							"output": "/actions/main/in/ControllerMovementLeft axis"
-						}
-					}
-				},
-				{
-					"mode": "scalar_constant",
-					"path": "/user/hand/right/input/joystick",
-					"inputs":
-					{
-						"value":
-						{
-							"output": "/actions/main/in/ControllerMovementRight axis"
 						}
 					}
 				}
@@ -217,5 +184,5 @@
 			]
 		}
 	},
-	"description": "Virtual Reality BP Game Template-11100242"
+	"description": "FindEmma-18319896"
 }
