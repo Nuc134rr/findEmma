@@ -3,63 +3,7 @@
 	"EngineAssociation": "4.27",
 	"Category": "",
 	"Description": "",
-	"Modules": [
-		{
-			"Name": "findEmmaTest",
-			"Type": "Runtime",
-			"LoadingPhase": "Default"
-		}
-	],
 	"Plugins": [
-		{
-			"Name": "XRVisualization",
-			"Enabled": false
-		},
-		{
-			"Name": "ResonanceAudio",
-			"Enabled": true
-		},
-		{
-			"Name": "OpenXR",
-			"Enabled": true,
-			"SupportedTargetPlatforms": [
-				"Win32",
-				"Win64",
-				"Linux",
-				"Android",
-				"HoloLens"
-			]
-		},
-		{
-			"Name": "OculusOpenXR",
-			"Enabled": true,
-			"SupportedTargetPlatforms": [
-				"Win32",
-				"Win64",
-				"Android"
-			]
-		},
-		{
-			"Name": "OpenVRExpansionPlugin",
-			"Enabled": true
-		},
-		{
-			"Name": "OpenXRExpansionPlugin",
-			"Enabled": true
-		},
-		{
-			"Name": "VRExpansionPlugin",
-			"Enabled": true
-		},
-		{
-			"Name": "Substance",
-			"Enabled": true,
-			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/2f6439c2f9584f49809d9b13b16c2ba4"
-		},
-		{
-			"Name": "EditorScriptingUtilities",
-			"Enabled": true
-		},
 		{
 			"Name": "HDRIBackdrop",
 			"Enabled": true
@@ -67,6 +11,23 @@
 		{
 			"Name": "Landmass",
 			"Enabled": true
+		},
+		{
+			"Name": "OpenVRExpansionPlugin",
+			"Enabled": true
+		},
+		{
+			"Name": "VRExpansionPlugin",
+			"Enabled": true
+		},
+		{
+			"Name": "OpenXRExpansionPlugin",
+			"Enabled": true
+		},
+		{
+			"Name": "Substance",
+			"Enabled": true,
+			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/2f6439c2f9584f49809d9b13b16c2ba4"
 		}
 	],
 	"TargetPlatforms": [
