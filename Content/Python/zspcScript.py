@@ -24,15 +24,15 @@ def autoPBR(createMaterial = True):
                 #name = unreal.Name(nameStr)
                 prefixList.append(prefix)
                 iterSuffix = nameStr.rsplit('_', 1)[1]
-                if iterSuffix == 'Albedo' or iterSuffix == 'albedo':
+                if iterSuffix == 'Albedo' or iterSuffix == 'albedo' or iterSuffix == 'BaseColor' or iterSuffix == 'basecolor':
                     albedoTexture = i
                 if iterSuffix == 'Normal' or iterSuffix == 'normal':
                     normalTexture = i
-                if iterSuffix == 'ORM' or iterSuffix == 'orm':
+                if iterSuffix == 'ORM' or iterSuffix == 'orm' or iterSuffix == 'OcclusionRoughnessMetallic' or iterSuffix == 'occlusionroughnessmetallic':
                     ormTexture = i
 
             if albedoTexture.asset_name == '' or ormTexture.asset_name == '' or normalTexture.asset_name == '':
-                unreal.log('Select textures with "_Normal", "_ORM", and "_Albedo" as their suffixes!')
+                unreal.log('Select textures with "_Normal", "_ORM"/"_OcclusionRoughnessMetallic", and "_Albedo"/"_BaseColor" as their suffixes!')
             else:
                 tPrefixCount = prefixList.count('T_')
                 firstObjectNameStr = str(selection[0].asset_name)
@@ -108,15 +108,15 @@ def autoPBR(createMaterial = True):
                 #name = unreal.Name(nameStr)
                 prefixList.append(prefix)
                 iterSuffix = nameStr.rsplit('_', 1)[1]
-                if iterSuffix == 'Albedo' or iterSuffix == 'albedo':
+                if iterSuffix == 'Albedo' or iterSuffix == 'albedo' or iterSuffix == 'BaseColor' or iterSuffix == 'basecolor':
                     albedoTexture = i
                 if iterSuffix == 'Normal' or iterSuffix == 'normal':
                     normalTexture = i
-                if iterSuffix == 'ORM' or iterSuffix == 'orm':
+                if iterSuffix == 'ORM' or iterSuffix == 'orm' or iterSuffix == 'OcclusionRoughnessMetallic' or iterSuffix == 'occlusionroughnessmetallic':
                     ormTexture = i
 
             if albedoTexture.asset_name == '' or ormTexture.asset_name == '' or normalTexture.asset_name == '':
-                unreal.log('Select textures with "_Normal", "_ORM", and "_Albedo" as their suffixes!')
+                unreal.log('Select textures with "_Normal", "_ORM"/"_OcclusionRoughnessMetallic", and "_Albedo"/"_BaseColor" as their suffixes!')
             else:
                 tPrefixCount = prefixList.count('T_')
                 mPrefixCount = prefixList.count('M_')
