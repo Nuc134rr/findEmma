@@ -23,8 +23,13 @@ def autoPBR(createMaterial = True):
                 prefix = nameStr[:2]
                 #name = unreal.Name(nameStr)
                 prefixList.append(prefix)
-                iterSuffix = nameStr.rsplit('_', 1)[1]
-                if iterSuffix == 'Albedo' or iterSuffix == 'albedo' or iterSuffix == 'BaseColor' or iterSuffix == 'basecolor':
+                unreal.log(nameStr)
+                if 'Base_Color' in nameStr or 'base_color' in nameStr or 'Base_color' in nameStr:
+                    iterSuffix = nameStr.rsplit('_', 2)[1] + '_' + nameStr.rsplit('_', 1)[1]
+                else:
+                    iterSuffix = nameStr.rsplit('_', 1)[1]
+                unreal.log(iterSuffix)
+                if iterSuffix == 'Albedo' or iterSuffix == 'albedo' or iterSuffix == 'BaseColor' or iterSuffix == 'basecolor' or iterSuffix == 'Base_Color' or iterSuffix == 'base_color' or iterSuffix == 'Base_color':
                     albedoTexture = i
                 if iterSuffix == 'Normal' or iterSuffix == 'normal':
                     normalTexture = i
@@ -107,8 +112,11 @@ def autoPBR(createMaterial = True):
                 prefix = nameStr[:2]
                 #name = unreal.Name(nameStr)
                 prefixList.append(prefix)
-                iterSuffix = nameStr.rsplit('_', 1)[1]
-                if iterSuffix == 'Albedo' or iterSuffix == 'albedo' or iterSuffix == 'BaseColor' or iterSuffix == 'basecolor':
+                if 'Base_Color' in nameStr or 'base_color' in nameStr or 'Base_color' in nameStr:
+                    iterSuffix = nameStr.rsplit('_', 2)[1] + '_' + nameStr.rsplit('_', 1)[1]
+                else:
+                    iterSuffix = nameStr.rsplit('_', 1)[1]
+                if iterSuffix == 'Albedo' or iterSuffix == 'albedo' or iterSuffix == 'BaseColor' or iterSuffix == 'basecolor' or iterSuffix == 'Base_Color' or iterSuffix == 'base_color' or iterSuffix == 'Base_color':
                     albedoTexture = i
                 if iterSuffix == 'Normal' or iterSuffix == 'normal':
                     normalTexture = i
@@ -149,3 +157,29 @@ def autoPBR(createMaterial = True):
                     unreal.MaterialEditingLibrary.connect_material_property(ts_node_orm, "B", unreal.MaterialProperty.MP_METALLIC)
                     ts_node_orm.sampler_type = unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_COLOR
                     ts_node_orm.texture = ormTexture.get_asset()
+
+def addPrefix(p='', u=True):
+    if p == '':
+        unreal.log_error("Correct syntax: zspcScript.addPrefix(p='<PREFIX>'')")
+    else:
+        lastChar = p[-1]
+        if u == True:
+            if lastChar == '_':
+                unreal.log_warning('Duplicate underscores added to name! No need to add an underscore at the end of the name!')
+                unreal.log_warning('(To add a prefix without an automatic underscore, add u=False in the parenthesis of the command)')
+            prefix = p + '_'
+        else:
+            prefix = p
+        selection = unreal.EditorUtilityLibrary.get_selected_asset_data()
+
+        if selection == []:
+            unreal.log_error('Select assets in the content browser!')
+        else:
+            for i in selection:
+                assetName = str(i.asset_name)
+                newName = prefix + assetName
+                objectPathStr = str(i.object_path)
+                newPath = objectPathStr.rsplit('/', 1)[0] + '/' + newName
+                with unreal.ScopedEditorTransaction("Batch Prefix") as trans: #Make undoable transaction
+                    unreal.EditorAssetLibrary.rename_asset(objectPathStr, newPath)
+            
