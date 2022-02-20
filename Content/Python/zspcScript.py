@@ -224,9 +224,9 @@ def psychoPrefix(p='', u=True, targetClass='Texture2D'): #Get folders: unreal.Zs
                             if str(asset.asset_name)[:len(prefix)] == prefix:
                                 print('Matches already!')
                             else:
-                                assetName = str(i.asset_name)
+                                assetName = str(asset.asset_name)
                                 newName = prefix + assetName
-                                objectPathStr = str(i.object_path)
+                                objectPathStr = str(asset.object_path)
                                 newPath = objectPathStr.rsplit('/', 1)[0] + '/' + newName
                                 unreal.EditorAssetLibrary.rename_asset(objectPathStr, newPath)
                 #for asset in assets:
