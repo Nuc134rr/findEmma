@@ -239,101 +239,146 @@ def addPrefix(p='', u=True):
 #                 # with unreal.ScopedEditorTransaction("Batch Prefix") as trans: #Make undoable transaction
 #                 #     unreal.EditorAssetLibrary.rename_asset(objectPathStr, newPath)
 
-def textureManage(textureFolderName = 'Textures'):
+def batchAssetName(assetFolderName = 'Textures', p='T', u=True, ouw=False, assetType = 'Texture2D'):
+    #Prefix setup
+    if p == '':
+        unreal.log_error("Correct syntax: zspcScript.batchAssetName(p='<PREFIX>'')")
+        exit
+    
+    lastChar = p[-1]
+    if u == True:
+        if lastChar == '_':
+            if not ouw:
+                unreal.log_error('Duplicate underscores for the prefix! No need to add an underscore at the end of the prefix!')
+                unreal.log_warning('(To add a prefix without an automatic underscore, add u=False in the parenthesis of the command)')
+                unreal.log_warning('To override this error and add multiple underscores, add the argument ouw=False')
+                exit()
+            else:
+                unreal.log_error('Duplicate underscores added in the prefix! No need to add an underscore at the end of the prefix!')
+                unreal.log_warning('(To add a prefix without an automatic underscore, add u=False in the parenthesis of the command)')
+        prefix = p + '_'
+    else:
+        prefix = p
+    
     selectedFolders = unreal.ZspcCpp.get_selected_folders()
+    validAssetTypes = ['Texture2D', 'Material', 'StaticMesh', 'MaterialInstanceConstant']
 
-    validTypes = ["BaseColor", "Albedo", "Base_Color", "Diffuse",
+    if not assetType in validAssetTypes:
+        unreal.log_error('Invalid assetType, currently supported types are Texture2D, Material, StaticMesh, and MaterialInstanceConstant')
+        exit()
+
+    #Substrings that identify a type of texture
+    validTextureTypes = ["BaseColor", "Albedo", "Base_Color", "Diffuse",
                   "Normal",
                   "_ORM", "OcclusionRoughnessMetallic", "Occlusion_Roughness_Metallic",
                   "Roughness",
                   "Opacity"]
 
-    BaseColorTypes = ["BaseColor", "Albedo", "Base_Color", "Diffuse"]
-    NormalTypes = ["Normal"]
-    OrmTypes = ["_ORM", "OcclusionRoughnessMetallic", "Occlusion_Roughness_Metallic"]
-    RoughnessTypes = ["Roughness"]
-    OpacityTypes = ["Opacity"]
+    #Substrings that identify a specific type of texture
+    BaseColorSubstrings = ["BaseColor", "Albedo", "Base_Color", "Diffuse"] 
+    NormalSubstrings = ["Normal"]
+    OrmSubstrings = ["_ORM", "OcclusionRoughnessMetallic", "Occlusion_Roughness_Metallic"]
+    RoughnessSubstrings = ["Roughness"]
+    OpacitySubstrings = ["Opacity"]
 
     noTypeTextures = []
-    validTextures = []
+    validAssets = []
     duplicateTypeTextures = []
+    duplicateAssets = []
 
     if selectedFolders == []:
         unreal.log_error('Select folder(s) in the content browser!')
+        exit()
+
+    subFolders=[]
+    #List of disk paths for subfolders
+    subFoldersDisk = unreal.ZspcCpp.get_sub_folders_paths_of_selected_folders()
+
+    #If there are no subfolders the operable folders are just the selected ones, if there are the operable folders are the selected folders and their subfolders
+    if subFoldersDisk == []:
+        allFolders = selectedFolders
     else:
-        subFolders=[]
-        subFoldersDisk = unreal.ZspcCpp.get_sub_folders_paths_of_selected_folders()
+        for i in subFoldersDisk:
+            currentGamePath = unreal.ZspcCpp.disk_path_to_game_path(i)
+            subFolders.append(currentGamePath)
+        allFolders = selectedFolders + subFolders
 
-        if subFoldersDisk == []:
-            allFolders = selectedFolders
+    for i in allFolders:
+        asset_reg = unreal.AssetRegistryHelpers.get_asset_registry()
+        assets = asset_reg.get_assets_by_path(i)
+        if assets == []:
+            pass
         else:
-            for i in subFoldersDisk:
-                currentGamePath = unreal.ZspcCpp.disk_path_to_game_path(i)
-                subFolders.append(currentGamePath)
-            allFolders = selectedFolders + subFolders
-
-        for i in allFolders:
-            asset_reg = unreal.AssetRegistryHelpers.get_asset_registry()
-            assets = asset_reg.get_assets_by_path(i)
-            if assets == []:
-                pass
-            else:
-                for asset in assets:
-                    assetNameStr = str(asset.asset_name)
-                    if asset.asset_class == 'Texture2D':
-                        if any(substring.lower() in assetNameStr.lower() for substring in validTypes):
-                            if 'Textures' in str(asset.object_path):
-                                validTextures.append(asset)
+            for asset in assets:
+                assetNameStr = str(asset.asset_name)
+                if asset.asset_class == assetType:
+                    if assetType == 'Texture2D':
+                        if any(substring.lower() in assetNameStr.lower() for substring in validTextureTypes):
+                            if assetFolderName in str(asset.object_path):
+                                validAssets.append(asset)
                             else:
-                                unreal.log_warning("TEXTURE OUTSIDE OF TEXTURES FOLDER: " + str(asset.asset_name))
+                                unreal.log_warning("ASSET OUTSIDE OF SPECIFIED FOLDER: " + str(asset.asset_name))
                         else:
                             noTypeTextures.append(asset)
+                    else:
+                        if assetFolderName in str(asset.object_path):
+                                validAssets.append(asset)
+                        else:
+                            unreal.log_warning("ASSET OUTSIDE OF SPECIFIED FOLDER: " + str(asset.asset_name))
 
-        for valid in validTextures:
-            objPathStr = str(valid.object_path).rsplit('.', 1)[0]
-            assetNameStr = str(valid.asset_name)
-            if any(substring.lower() in assetNameStr.lower() for substring in BaseColorTypes):
+    for valid in validAssets:
+        objPathStr = str(valid.object_path).rsplit('.', 1)[0]
+        assetNameStr = str(valid.asset_name)
+        if assetType == 'Texture2D':
+            if any(substring.lower() in assetNameStr.lower() for substring in BaseColorSubstrings):
                 validType = 'BaseColor'
-            if any(substring.lower() in assetNameStr.lower() for substring in NormalTypes):
+            if any(substring.lower() in assetNameStr.lower() for substring in NormalSubstrings):
                 validType = 'Normal'
-            if any(substring.lower() in assetNameStr.lower() for substring in OrmTypes):
+            if any(substring.lower() in assetNameStr.lower() for substring in OrmSubstrings):
                 validType = 'OcclusionRoughnessMetallic'
-            if any(substring.lower() in assetNameStr.lower() for substring in RoughnessTypes):
-                if not any(substring.lower() in assetNameStr.lower() for substring in OrmTypes): #Prevent ORM being overridden by roughness
+            if any(substring.lower() in assetNameStr.lower() for substring in RoughnessSubstrings):
+                if not any(substring.lower() in assetNameStr.lower() for substring in OrmSubstrings): #Prevent ORM being overridden by roughness
                     validType = 'Roughness'
-            if any(substring.lower() in assetNameStr.lower() for substring in OpacityTypes):
+            if any(substring.lower() in assetNameStr.lower() for substring in OpacitySubstrings):
                 validType = 'Opacity'
-            
-            parentFolder = (objPathStr.rsplit('/', 1)[0]).rsplit('/', 1)[1]
-            if not parentFolder == textureFolderName:
-                iterInt = 2
-                scanFolder = ''
-                while not scanFolder == textureFolderName:
-                    scanFolder = (objPathStr.rsplit('/', iterInt)[0]).rsplit('/', 1)[1]
-                    if not scanFolder == textureFolderName:
-                        iterInt += 1
-                AssetName = (objPathStr.rsplit('/', iterInt + 1)[0]).rsplit('/', 1)[1]
-                subFolderNameList = []
-                for i in reversed(range(iterInt - 1)):
-                    subFolderNameList.append((objPathStr.rsplit('/', i + 1)[0]).rsplit('/', 1)[1])
-                subFolderNameList_i = ['_'] * (len(subFolderNameList) * 2 - 1)
-                subFolderNameList_i[0::2] = subFolderNameList
-                subFoldersName = ''.join(subFolderNameList_i)
-                BaseName = AssetName + '_' + subFoldersName
-            else:
-                AssetName = (objPathStr.rsplit('/', 2)[0]).rsplit('/', 1)[1]
-                BaseName = AssetName
-            NewName = 'T_' + BaseName + '_' + validType
-            unreal.log('Renaming: ' + str(valid.asset_name) + ' ---> ' + NewName)
-            newPath = objPathStr.rsplit('/', 1)[0] + '/' + NewName
-            newPathEmpty = not (unreal.EditorAssetLibrary.does_asset_exist(newPath))
-            if newPathEmpty:
-                unreal.EditorAssetLibrary.rename_asset(objPathStr, newPath)
-            else:
-                duplicateTypeTextures.append(valid)
-
-        for i in noTypeTextures:
-            unreal.log_warning("MANUALLY RENAME: '{}', ".format(str(i.asset_name)) + " PATH: {}".format(str(i.object_path).rsplit('.', 1)[0]))
+        else:
+            validType = ''
         
-        for i in duplicateTypeTextures:
-            unreal.log_warning("DUPLICATE TYPES WITHOUT SUBFOLDERS, '{}' MUST BE MANUALLY RENAMED! PATH: {}".format(i.asset_name, i.object_path))
+        parentFolder = (objPathStr.rsplit('/', 1)[0]).rsplit('/', 1)[1]
+        if not parentFolder == assetFolderName:
+            iterInt = 2
+            scanFolder = ''
+            while not scanFolder == assetFolderName:
+                scanFolder = (objPathStr.rsplit('/', iterInt)[0]).rsplit('/', 1)[1]
+                if not scanFolder == assetFolderName:
+                    iterInt += 1
+            AssetName = (objPathStr.rsplit('/', iterInt + 1)[0]).rsplit('/', 1)[1]
+            subFolderNameList = []
+            for i in reversed(range(iterInt - 1)):
+                subFolderNameList.append((objPathStr.rsplit('/', i + 1)[0]).rsplit('/', 1)[1])
+            subFolderNameList_i = ['_'] * (len(subFolderNameList) * 2 - 1)
+            subFolderNameList_i[0::2] = subFolderNameList
+            subFoldersName = ''.join(subFolderNameList_i)
+            BaseName = AssetName + '_' + subFoldersName
+        else:
+            AssetName = (objPathStr.rsplit('/', 2)[0]).rsplit('/', 1)[1]
+            BaseName = AssetName
+        NewName = prefix + BaseName + '_' + validType
+        unreal.log('Renaming: ' + str(valid.asset_name) + ' ---> ' + NewName)
+        newPath = objPathStr.rsplit('/', 1)[0] + '/' + NewName
+        newPathEmpty = not (unreal.EditorAssetLibrary.does_asset_exist(newPath))
+        if newPathEmpty:
+            unreal.EditorAssetLibrary.rename_asset(objPathStr, newPath)
+        else:
+            if assetType == 'Texture2D':
+                duplicateTypeTextures.append(valid)
+            else:
+                duplicateAssets.append(valid)
+
+    for i in noTypeTextures:
+        unreal.log_warning("MANUALLY RENAME: '{}', ".format(str(i.asset_name)) + " PATH: {}".format(str(i.object_path).rsplit('.', 1)[0]))
+    
+    for i in duplicateTypeTextures:
+        unreal.log_warning("DUPLICATE TEXTURE TYPES WITHOUT SUBFOLDERS, '{}' MUST BE MANUALLY RENAMED! PATH: {}".format(i.asset_name, i.object_path))
+    for i in duplicateAssets:
+        unreal.log_warning("DUPLICATE ASSETS WITHOUT SUBFOLDERS, '{}' MUST BE MANUALLY RENAMED! PATH: {}".format(i.asset_name, i.object_path))
