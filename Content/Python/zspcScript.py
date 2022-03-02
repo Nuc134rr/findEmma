@@ -239,7 +239,7 @@ def addPrefix(p='', u=True):
 #                 # with unreal.ScopedEditorTransaction("Batch Prefix") as trans: #Make undoable transaction
 #                 #     unreal.EditorAssetLibrary.rename_asset(objectPathStr, newPath)
 
-def batchAssetName(assetFolderName = 'Zauto', p='Zauto', u=True, ouw=False, assetType = 'Texture2D'):
+def batchAssetName(assetFolderName = 'Zauto', p='Zauto', u=True, ouw=False, assetType = 'Texture2D', enumerateDuplicates = False):
 
     if p == 'Zauto':
         if assetType == 'Texture2D':
@@ -395,10 +395,19 @@ def batchAssetName(assetFolderName = 'Zauto', p='Zauto', u=True, ouw=False, asse
         if newPathEmpty:
             unreal.EditorAssetLibrary.rename_asset(objPathStr, newPath)
         else:
-            if assetType == 'Texture2D':
-                duplicateTypeTextures.append(valid)
+            if enumerateDuplicates:
+                newEnumeratedPathEmpty = False
+                iterInt_1 = 1
+                while not newEnumeratedPathEmpty:
+                    enumeratedPath = newPath + '_' + str(iterInt_1)
+                    newEnumeratedPathEmpty = not (unreal.EditorAssetLibrary.does_asset_exist(enumeratedPath))
+                    iterInt_1 += 1
+                unreal.EditorAssetLibrary.rename_asset(objPathStr, enumeratedPath)
             else:
-                duplicateAssets.append(valid)
+                if assetType == 'Texture2D':
+                    duplicateTypeTextures.append(valid)
+                else:
+                    duplicateAssets.append(valid)
 
     for i in noTypeTextures:
         unreal.log_warning("MANUALLY RENAME: '{}', ".format(str(i.asset_name)) + " PATH: {}".format(str(i.object_path).rsplit('.', 1)[0]))
