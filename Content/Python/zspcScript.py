@@ -239,7 +239,28 @@ def addPrefix(p='', u=True):
 #                 # with unreal.ScopedEditorTransaction("Batch Prefix") as trans: #Make undoable transaction
 #                 #     unreal.EditorAssetLibrary.rename_asset(objectPathStr, newPath)
 
-def batchAssetName(assetFolderName = 'Textures', p='T', u=True, ouw=False, assetType = 'Texture2D'):
+def batchAssetName(assetFolderName = 'Zauto', p='Zauto', u=True, ouw=False, assetType = 'Texture2D'):
+
+    if p == 'Zauto':
+        if assetType == 'Texture2D':
+            p = 'T'
+        if assetType == 'Material':
+            p = 'M'
+        if assetType == 'MaterialInstanceConstant':
+            p = 'MI'
+        if assetType == 'StaticMesh':
+            p = 'SM'
+        if not u:
+            p = p + '_'
+    
+    if assetFolderName == 'Zauto':
+        if assetType == 'Texture2D':
+            assetFolderName = 'Textures'
+        if assetType == 'Material' or assetType == 'MaterialInstanceConstant':
+            assetFolderName = 'Materials'
+        if assetType == 'StaticMesh':
+            assetFolderName = 'Meshes'
+
     #Prefix setup
     if p == '':
         unreal.log_error("Correct syntax: zspcScript.batchAssetName(p='<PREFIX>'')")
@@ -250,8 +271,8 @@ def batchAssetName(assetFolderName = 'Textures', p='T', u=True, ouw=False, asset
         if lastChar == '_':
             if not ouw:
                 unreal.log_error('Duplicate underscores for the prefix! No need to add an underscore at the end of the prefix!')
-                unreal.log_warning('(To add a prefix without an automatic underscore, add u=False in the parenthesis of the command)')
-                unreal.log_warning('To override this error and add multiple underscores, add the argument ouw=False')
+                unreal.log_error('(To add a prefix without an automatic underscore, add u=False in the parenthesis of the command)')
+                unreal.log_error('To override this error and add multiple underscores, add the argument ouw=False')
                 exit()
             else:
                 unreal.log_error('Duplicate underscores added in the prefix! No need to add an underscore at the end of the prefix!')
@@ -363,7 +384,11 @@ def batchAssetName(assetFolderName = 'Textures', p='T', u=True, ouw=False, asset
         else:
             AssetName = (objPathStr.rsplit('/', 2)[0]).rsplit('/', 1)[1]
             BaseName = AssetName
-        NewName = prefix + BaseName + '_' + validType
+        if not validType == '':
+            underscoreValidType = '_' + validType
+        else:
+            underscoreValidType = ''
+        NewName = prefix + BaseName + underscoreValidType
         unreal.log('Renaming: ' + str(valid.asset_name) + ' ---> ' + NewName)
         newPath = objPathStr.rsplit('/', 1)[0] + '/' + NewName
         newPathEmpty = not (unreal.EditorAssetLibrary.does_asset_exist(newPath))
@@ -379,6 +404,6 @@ def batchAssetName(assetFolderName = 'Textures', p='T', u=True, ouw=False, asset
         unreal.log_warning("MANUALLY RENAME: '{}', ".format(str(i.asset_name)) + " PATH: {}".format(str(i.object_path).rsplit('.', 1)[0]))
     
     for i in duplicateTypeTextures:
-        unreal.log_warning("DUPLICATE TEXTURE TYPES WITHOUT SUBFOLDERS, '{}' MUST BE MANUALLY RENAMED! PATH: {}".format(i.asset_name, i.object_path))
+        unreal.log_warning("DUPLICATE TEXTURE TYPES WITHOUT SUBFOLDERS OR ASSET ALREADY PROPERLY NAMED, '{}' NEEDS MANUAL ATTENTION! PATH: {}".format(i.asset_name, i.object_path))
     for i in duplicateAssets:
-        unreal.log_warning("DUPLICATE ASSETS WITHOUT SUBFOLDERS, '{}' MUST BE MANUALLY RENAMED! PATH: {}".format(i.asset_name, i.object_path))
+        unreal.log_warning("DUPLICATE ASSETS WITHOUT SUBFOLDERS OR ASSET ALREADY PROPERLY NAMED, '{}' NEEDS MANUAL ATTENTION! PATH: {}".format(i.asset_name, i.object_path))
