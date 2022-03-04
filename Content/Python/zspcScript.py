@@ -416,3 +416,43 @@ def batchAssetName(assetFolderName = 'Zauto', p='Zauto', u=True, ouw=False, asse
         unreal.log_warning("DUPLICATE TEXTURE TYPES WITHOUT SUBFOLDERS OR ASSET ALREADY PROPERLY NAMED, '{}' NEEDS MANUAL ATTENTION! PATH: {}".format(i.asset_name, i.object_path))
     for i in duplicateAssets:
         unreal.log_warning("DUPLICATE ASSETS WITHOUT SUBFOLDERS OR ASSET ALREADY PROPERLY NAMED, '{}' NEEDS MANUAL ATTENTION! PATH: {}".format(i.asset_name, i.object_path))
+
+
+def changeMaker(targetClass='Texture2D'):
+    selectedFolders = unreal.ZspcCpp.get_selected_folders()
+
+    if selectedFolders == []:
+        unreal.log_error('Select folder(s) in the content browser!')
+    else:
+        subFolders=[]
+        subFoldersDisk = unreal.ZspcCpp.get_sub_folders_paths_of_selected_folders()
+
+        if subFoldersDisk == []:
+            allFolders = selectedFolders
+        else:
+            for i in subFoldersDisk:
+                currentGamePath = unreal.ZspcCpp.disk_path_to_game_path(i)
+                subFolders.append(currentGamePath)
+            allFolders = selectedFolders + subFolders
+
+        for i in allFolders:
+            asset_reg = unreal.AssetRegistryHelpers.get_asset_registry()
+            assets = asset_reg.get_assets_by_path(i)
+            if assets == []:
+                #unreal.log_warning("EMPTY FOLDER")
+                pass
+            else:
+                for asset in assets:
+                    if asset.asset_class == targetClass:
+                        objectPathStr = str(asset.object_path)
+                        assetObj = unreal.EditorAssetLibrary.load_asset(objectPathStr)
+                        if asset.asset_class == 'Texture2D':
+                            changeValue = assetObj.get_editor_property("never_stream")
+                            changeValue_reverse = not changeValue
+                            unreal.log_warning('srgb = ' + str(changeValue))
+                            unreal.log_warning('srgb /= ' + str(changeValue_reverse))
+                            unreal.log_warning('assetObj = ' + str(assetObj))
+                            assetObj.set_editor_property("never_stream", changeValue_reverse)
+                            unreal.EditorAssetLibrary.save_asset(objectPathStr)
+                            assetObj.set_editor_property("never_stream", changeValue)
+                            unreal.EditorAssetLibrary.save_asset(objectPathStr)
