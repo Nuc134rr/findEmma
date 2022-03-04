@@ -185,59 +185,59 @@ def addPrefix(p='', u=True):
                     unreal.EditorAssetLibrary.rename_asset(objectPathStr, newPath)
 
 #Psycho Prefix is retired
-# def psychoPrefix(p='', u=True, targetClass='Texture2D'): #Get folders: unreal.ZspcCpp.get_selected_folders() #Get All Subfolders Paths: unreal.ZspcCpp.get_sub_folders_paths_of_selected_folders() #Disk Path To Game Path: unreal.ZspcCpp.disk_path_to_game_path(<diskPath>)
-#     if p == '':
-#         unreal.log_error("Correct syntax: zspcScript.addPrefix(p='<PREFIX>'')")
-#     else:
-#         lastChar = p[-1]
-#         if u == True:
-#             if lastChar == '_':
-#                 unreal.log_warning('Duplicate underscores added to name! No need to add an underscore at the end of the name!')
-#                 unreal.log_warning('(To add a prefix without an automatic underscore, add u=False in the parenthesis of the command)')
-#             prefix = p + '_'
-#         else:
-#             prefix = p
-#         selectedFolders = unreal.ZspcCpp.get_selected_folders()
+def psychoPrefix(p='', u=True, targetClass='Texture2D'): #Get folders: unreal.ZspcCpp.get_selected_folders() #Get All Subfolders Paths: unreal.ZspcCpp.get_sub_folders_paths_of_selected_folders() #Disk Path To Game Path: unreal.ZspcCpp.disk_path_to_game_path(<diskPath>)
+    if p == '':
+        unreal.log_error("Correct syntax: zspcScript.addPrefix(p='<PREFIX>'')")
+    else:
+        lastChar = p[-1]
+        if u == True:
+            if lastChar == '_':
+                unreal.log_warning('Duplicate underscores added to name! No need to add an underscore at the end of the name!')
+                unreal.log_warning('(To add a prefix without an automatic underscore, add u=False in the parenthesis of the command)')
+            prefix = p + '_'
+        else:
+            prefix = p
+        selectedFolders = unreal.ZspcCpp.get_selected_folders()
 
-#         if selectedFolders == []:
-#             unreal.log_error('Select folder(s) in the content browser!')
-#         else:
-#             subFolders=[]
-#             subFoldersDisk = unreal.ZspcCpp.get_sub_folders_paths_of_selected_folders()
+        if selectedFolders == []:
+            unreal.log_error('Select folder(s) in the content browser!')
+        else:
+            subFolders=[]
+            subFoldersDisk = unreal.ZspcCpp.get_sub_folders_paths_of_selected_folders()
 
-#             if subFoldersDisk == []:
-#                 allFolders = selectedFolders
-#             else:
-#                 for i in subFoldersDisk:
-#                     currentGamePath = unreal.ZspcCpp.disk_path_to_game_path(i)
-#                     subFolders.append(currentGamePath)
-#                 allFolders = selectedFolders + subFolders
+            if subFoldersDisk == []:
+                allFolders = selectedFolders
+            else:
+                for i in subFoldersDisk:
+                    currentGamePath = unreal.ZspcCpp.disk_path_to_game_path(i)
+                    subFolders.append(currentGamePath)
+                allFolders = selectedFolders + subFolders
 
-#             for i in allFolders:
-#                 asset_reg = unreal.AssetRegistryHelpers.get_asset_registry()
-#                 assets = asset_reg.get_assets_by_path(i)
-#                 if assets == []:
-#                     #unreal.log_warning("EMPTY FOLDER")
-#                     pass
-#                 else:
-#                     for asset in assets:
-#                         if asset.asset_class == targetClass:
-#                             if str(asset.asset_name)[:len(prefix)] == prefix:
-#                                 print('Matches already!')
-#                             else:
-#                                 assetName = str(asset.asset_name)
-#                                 newName = prefix + assetName
-#                                 objectPathStr = str(asset.object_path)
-#                                 newPath = objectPathStr.rsplit('/', 1)[0] + '/' + newName
-#                                 unreal.EditorAssetLibrary.rename_asset(objectPathStr, newPath)
-#                 #for asset in assets:
-#                 #    print(asset)
-#                 # assetName = str(i.asset_name)
-#                 # newName = prefix + assetName
-#                 # objectPathStr = str(i.object_path)
-#                 # newPath = objectPathStr.rsplit('/', 1)[0] + '/' + newName
-#                 # with unreal.ScopedEditorTransaction("Batch Prefix") as trans: #Make undoable transaction
-#                 #     unreal.EditorAssetLibrary.rename_asset(objectPathStr, newPath)
+            for i in allFolders:
+                asset_reg = unreal.AssetRegistryHelpers.get_asset_registry()
+                assets = asset_reg.get_assets_by_path(i)
+                if assets == []:
+                    #unreal.log_warning("EMPTY FOLDER")
+                    pass
+                else:
+                    for asset in assets:
+                        if asset.asset_class == targetClass:
+                            if str(asset.asset_name)[:len(prefix)] == prefix:
+                                print('Matches already!')
+                            else:
+                                assetName = str(asset.asset_name)
+                                newName = prefix + assetName
+                                objectPathStr = str(asset.object_path)
+                                newPath = objectPathStr.rsplit('/', 1)[0] + '/' + newName
+                                unreal.EditorAssetLibrary.rename_asset(objectPathStr, newPath)
+                #for asset in assets:
+                #    print(asset)
+                # assetName = str(i.asset_name)
+                # newName = prefix + assetName
+                # objectPathStr = str(i.object_path)
+                # newPath = objectPathStr.rsplit('/', 1)[0] + '/' + newName
+                # with unreal.ScopedEditorTransaction("Batch Prefix") as trans: #Make undoable transaction
+                #     unreal.EditorAssetLibrary.rename_asset(objectPathStr, newPath)
 
 def batchAssetName(assetFolderName = 'Zauto', p='Zauto', u=True, ouw=False, assetType = 'Texture2D', enumerateDuplicates = False):
 
