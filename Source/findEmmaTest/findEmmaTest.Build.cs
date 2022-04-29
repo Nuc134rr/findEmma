@@ -12,6 +12,8 @@ public class findEmmaTest : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "Core", "ContentBrowser" });
 
+		PublicDependencyModuleNames.AddRange(new string[] { "VRExpansionPlugin" });
+
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 		
