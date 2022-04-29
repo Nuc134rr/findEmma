@@ -10,19 +10,27 @@
 	"DocsURL": "http://www.vreue4.com",
 	"MarketplaceURL": "",
 	"SupportURL": "http://www.vreue4.com",
-	"EngineVersion": "4.27.0",
+	"EnabledByDefault": false,
 	"CanContainContent": false,
+	"IsBetaVersion": false,
 	"Installed": true,
+	"SupportedTargetPlatforms": [
+		"Win64",
+		"Linux",
+		"Android",
+		"HoloLens"
+	],
 	"Modules": [
 		{
 			"Name": "OpenXRExpansionPlugin",
 			"Type": "Runtime",
 			"LoadingPhase": "PostConfigInit"
-		},
+		}
+		,
 		{
-			"Name": "OpenXRExpansionEditor",
-			"Type": "UncookedOnly",
-			"LoadingPhase": "PostEngineInit"
+		  "Name": "OpenXRExpansionEditor",
+		  "Type": "UnCookedOnly",
+		  "LoadingPhase": "PostEngineInit"
 		}
 	],
 	"Plugins": [

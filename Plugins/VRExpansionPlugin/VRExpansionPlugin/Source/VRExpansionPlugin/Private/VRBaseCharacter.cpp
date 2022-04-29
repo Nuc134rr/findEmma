@@ -13,12 +13,17 @@ FName AVRBaseCharacter::RightMotionControllerComponentName(TEXT("Right Grip Moti
 FName AVRBaseCharacter::ReplicatedCameraComponentName(TEXT("VR Replicated Camera"));
 FName AVRBaseCharacter::ParentRelativeAttachmentComponentName(TEXT("Parent Relative Attachment"));
 FName AVRBaseCharacter::SmoothingSceneParentComponentName(TEXT("NetSmoother"));
+FName AVRBaseCharacter::VRProxyComponentName(TEXT("VRProxy"));
+
 
 FRepMovementVRCharacter::FRepMovementVRCharacter()
 : Super()
 {
 	bJustTeleported = false;
 	bJustTeleportedGrips = false;
+	bPausedTracking = false;
+	PausedTrackingLoc = FVector::ZeroVector;
+	PausedTrackingRot = 0.f;
 	Owner = nullptr;
 }
 
@@ -45,11 +50,17 @@ AVRBaseCharacter::AVRBaseCharacter(const FObjectInitializer& ObjectInitializer)
 		NetSmoother->SetupAttachment(RootComponent);
 	}
 
+	VRProxyComponent = CreateDefaultSubobject<USceneComponent>(AVRBaseCharacter::VRProxyComponentName);
+	if (NetSmoother && VRProxyComponent)
+	{
+		VRProxyComponent->SetupAttachment(NetSmoother);
+	}
+
 	VRReplicatedCamera = CreateDefaultSubobject<UReplicatedVRCameraComponent>(AVRBaseCharacter::ReplicatedCameraComponentName);
 	if (VRReplicatedCamera)
 	{
 		VRReplicatedCamera->bOffsetByHMD = false;
-		VRReplicatedCamera->SetupAttachment(NetSmoother);
+		VRReplicatedCamera->SetupAttachment(VRProxyComponent);
 		VRReplicatedCamera->OverrideSendTransform = &AVRBaseCharacter::Server_SendTransformCamera;
 	}
 
@@ -64,7 +75,7 @@ AVRBaseCharacter::AVRBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	if (ParentRelativeAttachment && VRReplicatedCamera)
 	{
 		// Moved this to be root relative as the camera late updates were killing how it worked
-		ParentRelativeAttachment->SetupAttachment(NetSmoother);
+		ParentRelativeAttachment->SetupAttachment(VRProxyComponent);
 		ParentRelativeAttachment->bOffsetByHMD = false;
 		ParentRelativeAttachment->AddTickPrerequisiteComponent(VRReplicatedCamera);
 
@@ -77,7 +88,7 @@ AVRBaseCharacter::AVRBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	LeftMotionController = CreateDefaultSubobject<UGripMotionControllerComponent>(AVRBaseCharacter::LeftMotionControllerComponentName);
 	if (LeftMotionController)
 	{
-		LeftMotionController->SetupAttachment(NetSmoother);
+		LeftMotionController->SetupAttachment(VRProxyComponent);
 		//LeftMotionController->MotionSource = FXRMotionControllerBase::LeftHandSourceId;
 		LeftMotionController->SetTrackingMotionSource(FXRMotionControllerBase::LeftHandSourceId);
 		//LeftMotionController->Hand = EControllerHand::Left;
@@ -91,7 +102,7 @@ AVRBaseCharacter::AVRBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	RightMotionController = CreateDefaultSubobject<UGripMotionControllerComponent>(AVRBaseCharacter::RightMotionControllerComponentName);
 	if (RightMotionController)
 	{
-		RightMotionController->SetupAttachment(NetSmoother);
+		RightMotionController->SetupAttachment(VRProxyComponent);
 		//RightMotionController->MotionSource = FXRMotionControllerBase::RightHandSourceId;
 		RightMotionController->SetTrackingMotionSource(FXRMotionControllerBase::RightHandSourceId);
 		//RightMotionController->Hand = EControllerHand::Right;
@@ -120,6 +131,9 @@ AVRBaseCharacter::AVRBaseCharacter(const FObjectInitializer& ObjectInitializer)
 
 	ReplicatedMovementVR.Owner = this;
 	bFlagTeleported = false;
+	bTrackingPaused = false;
+	PausedTrackingLoc = FVector::ZeroVector;
+	PausedTrackingRot = 0.f;
 }
 
  void AVRBaseCharacter::PossessedBy(AController* NewController)
@@ -177,7 +191,7 @@ void AVRBaseCharacter::PostInitializeComponents()
 	}
 }
 
-void AVRBaseCharacter::CacheInitialMeshOffset(FVector MeshRelativeLocation, FRotator MeshRelativeRotation)
+/*void AVRBaseCharacter::CacheInitialMeshOffset(FVector MeshRelativeLocation, FRotator MeshRelativeRotation)
 {
 	BaseTranslationOffset = MeshRelativeLocation;
 	BaseRotationOffset = MeshRelativeRotation.Quaternion();
@@ -197,7 +211,7 @@ void AVRBaseCharacter::CacheInitialMeshOffset(FVector MeshRelativeLocation, FRot
 		}
 	}
 #endif
-}
+}*/
 
 void AVRBaseCharacter::GetLifetimeReplicatedProps(TArray< class FLifetimeProperty > & OutLifetimeProps) const
 {
@@ -258,7 +272,7 @@ bool AVRBaseCharacter::Server_ReZeroSeating_Validate(FTransform_NetQuantize NewT
 	return true;
 }
 
-void AVRBaseCharacter::OnCustomMoveActionPerformed_Implementation(EVRMoveAction MoveActionType, FVector MoveActionVector, FRotator MoveActionRotator)
+void AVRBaseCharacter::OnCustomMoveActionPerformed_Implementation(EVRMoveAction MoveActionType, FVector MoveActionVector, FRotator MoveActionRotator, uint8 MoveActionFlags)
 {
 
 }
@@ -375,6 +389,13 @@ void AVRBaseCharacter::OnRep_ReplicatedMovement()
 		{
 			NotifyOfTeleport(false);
 		}
+
+		bTrackingPaused = ReplicatedMovementVR.bPausedTracking;
+		if (bTrackingPaused)
+		{
+			PausedTrackingLoc = ReplicatedMovementVR.PausedTrackingLoc;
+			PausedTrackingRot = ReplicatedMovementVR.PausedTrackingRot;
+		}
 	}
 }
 
@@ -394,6 +415,9 @@ void AVRBaseCharacter::GatherCurrentMovement()
 	ReplicatedMovementVR.bJustTeleportedGrips = bFlagTeleportedGrips;
 	bFlagTeleported = false;
 	bFlagTeleportedGrips = false;
+	ReplicatedMovementVR.bPausedTracking = bTrackingPaused;
+	ReplicatedMovementVR.PausedTrackingLoc = PausedTrackingLoc;
+	ReplicatedMovementVR.PausedTrackingRot = PausedTrackingRot;
 }
 
 
@@ -543,8 +567,16 @@ void AVRBaseCharacter::InitSeatedModeTransition()
 				bUseControllerRotationYaw = SeatInformation.bOriginalControlRotation;
 
 				SetActorLocationAndRotationVR(SeatInformation.StoredTargetTransform.GetTranslation(), SeatInformation.StoredTargetTransform.Rotator(), true, true, true);
-				LeftMotionController->PostTeleportMoveGrippedObjects();
-				RightMotionController->PostTeleportMoveGrippedObjects();
+				
+				if (LeftMotionController)
+				{
+					LeftMotionController->PostTeleportMoveGrippedObjects();
+				}
+
+				if (RightMotionController)
+				{
+					RightMotionController->PostTeleportMoveGrippedObjects();
+				}
 
 				/*if (UVRBaseCharacterMovementComponent * charMovement = Cast<UVRBaseCharacterMovementComponent>(GetMovementComponent()))
 				{

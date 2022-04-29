@@ -54,7 +54,8 @@ struct TStructOpsTypeTraits<FSkeletalMeshComponentEndPhysicsTickFunctionVR> : pu
 	};
 };
 
-UCLASS(meta = (ChildCanTick), ClassGroup = (VRExpansionPlugin))
+// A base skeletal mesh component that has been added to temp correct an engine bug with inversed scale and physics
+UCLASS(Blueprintable, meta = (ChildCanTick, BlueprintSpawnableComponent), ClassGroup = (VRExpansionPlugin))
 class VREXPANSIONPLUGIN_API UInversePhysicsSkeletalMeshComponent : public USkeletalMeshComponent
 {
 	GENERATED_BODY()
@@ -75,6 +76,21 @@ public:
 	void EndPhysicsTickComponentVR(FSkeletalMeshComponentEndPhysicsTickFunctionVR& ThisTickFunction);
 	void BlendInPhysicsInternalVR(FTickFunction& ThisTickFunction);
 	void FinalizeAnimationUpdateVR();
+
+	virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override
+	{
+		// Get rid of inverse issues
+		FTransform newLocalToWorld = LocalToWorld;
+		newLocalToWorld.SetScale3D(newLocalToWorld.GetScale3D().GetAbs());
+
+		return Super::CalcBounds(newLocalToWorld);
+	}
+
+	UFUNCTION(BlueprintPure, Category = "VRExpansionFunctions")
+	FBoxSphereBounds GetLocalBounds() const
+	{
+		return this->GetCachedLocalBounds();
+	}
 
 	void PerformBlendPhysicsBonesVR(const TArray<FBoneIndexType>& InRequiredBones, TArray<FTransform>& InBoneSpaceTransforms);
 	virtual void RegisterEndPhysicsTick(bool bRegister) override;

@@ -75,6 +75,17 @@ namespace CharacterMovementComponentStatics
 
 }
 
+void UVRCharacterMovementComponent::StoreSetTrackingPaused(bool bNewTrackingPaused)
+{
+	FVRMoveActionContainer MoveAction;
+	MoveAction.MoveAction = EVRMoveAction::VRMOVEACTION_PauseTracking;
+	MoveAction.MoveActionFlags = bNewTrackingPaused;
+	MoveAction.MoveActionLoc = VRRootCapsule->curCameraLoc;
+	MoveAction.MoveActionRot = VRRootCapsule->StoredCameraRotOffset;
+	MoveActionArray.MoveActions.Add(MoveAction);
+	CheckServerAuthedMoveAction();
+}
+
 void UVRCharacterMovementComponent::Crouch(bool bClientSimulation)
 {
 	if (!HasValidData())
@@ -178,7 +189,7 @@ void UVRCharacterMovementComponent::Crouch(bool bClientSimulation)
 	CharacterOwner->OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
 
 	// Don't smooth this change in mesh position
-	if ((bClientSimulation && CharacterOwner->GetLocalRole() == ROLE_SimulatedProxy) || (IsNetMode(NM_ListenServer) && CharacterOwner->GetRemoteRole() == ROLE_AutonomousProxy))
+	if (/*(bClientSimulation && CharacterOwner->GetLocalRole() == ROLE_SimulatedProxy) ||*/ (IsNetMode(NM_ListenServer) && CharacterOwner->GetRemoteRole() == ROLE_AutonomousProxy))
 	{
 		FNetworkPredictionData_Client_Character* ClientData = GetPredictionData_Client_Character();
 
@@ -333,7 +344,7 @@ void UVRCharacterMovementComponent::UnCrouch(bool bClientSimulation)
 	CharacterOwner->OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
 
 	// Don't smooth this change in mesh position
-	if ((bClientSimulation && CharacterOwner->GetLocalRole() == ROLE_SimulatedProxy) || (IsNetMode(NM_ListenServer) && CharacterOwner->GetRemoteRole() == ROLE_AutonomousProxy))
+	if (/*(bClientSimulation && CharacterOwner->GetLocalRole() == ROLE_SimulatedProxy) || */(IsNetMode(NM_ListenServer) && CharacterOwner->GetRemoteRole() == ROLE_AutonomousProxy))
 	{
 		FNetworkPredictionData_Client_Character* ClientData = GetPredictionData_Client_Character();
 
@@ -532,6 +543,7 @@ void UVRCharacterMovementComponent::ServerMove_PerformMovement(const FCharacterN
 
 			CustomVRInputVector = MoveDataVR->ConditionalMoveReps.CustomVRInputVector;
 			MoveActionArray = MoveDataVR->ConditionalMoveReps.MoveActionArray;
+			VRReplicatedMovementMode = MoveDataVR->ReplicatedMovementMode;
 
 			// Set capsule location prior to testing movement
 			// I am overriding the replicated value here when movement is made on purpose
@@ -3466,6 +3478,7 @@ void UVRCharacterMovementComponent::SimulateMovement(float DeltaSeconds)
 			Velocity = FVector::ZeroVector;
 		}
 
+
 		MaybeUpdateBasedMovement(DeltaSeconds);
 
 		// simulated pawns predict location
@@ -3480,7 +3493,12 @@ void UVRCharacterMovementComponent::SimulateMovement(float DeltaSeconds)
 		{
 			UE_LOG(LogVRCharacterMovement, Verbose, TEXT("Proxy %s simulating movement"), *GetNameSafe(CharacterOwner));
 			FStepDownResult StepDownResult;
-			MoveSmooth(Velocity, DeltaSeconds, &StepDownResult);
+
+			// Skip the estimated movement when movement simulation is off, but keep the floor find
+			if(!bDisableSimulatedTickWhenSmoothingMovement)
+			{ 
+				MoveSmooth(Velocity, DeltaSeconds, &StepDownResult);
+			}
 
 			// find floor and check if falling
 			if (IsMovingOnGround() || MovementMode == MOVE_Falling)
@@ -3489,7 +3507,7 @@ void UVRCharacterMovementComponent::SimulateMovement(float DeltaSeconds)
 				{
 					CurrentFloor = StepDownResult.FloorResult;
 				}
-				else if (Velocity.Z <= 0.f)
+				else if (bDisableSimulatedTickWhenSmoothingMovement || Velocity.Z <= 0.f)
 				{
 					FindFloor(UpdatedComponent->GetComponentLocation(), CurrentFloor, Velocity.IsZero(), NULL);
 				}

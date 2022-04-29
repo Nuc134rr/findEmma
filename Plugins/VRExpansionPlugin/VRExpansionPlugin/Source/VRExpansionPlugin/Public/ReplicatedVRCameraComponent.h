@@ -40,6 +40,13 @@ public:
 	/** Whether or not this component is currently on the network server*/
 	bool bIsServer;
 
+	FTransform LastRelativePosition;
+	bool bHadValidFirstVelocity;
+
+	// If we should sample the velocity in world or local space
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReplicatedCamera|ComponentVelocity")
+		bool bSampleVelocityInWorldSpace;
+
 	// For non view target positional updates
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReplicatedCamera")
 	bool bSetPositionDuringTick;

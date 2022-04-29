@@ -142,8 +142,15 @@ bool UGS_GunTools::GetWorldTransform_Implementation
 
 	if (bHasActiveRecoil)
 	{
+		// Using a matrix to avoid FTransform inverse math issues
+		FTransform relTransform(Grip.RelativeTransform.ToInverseMatrixWithScale());
+
 		// Eventually may want to adjust the pivot of the recoil rotation by the PivotOffset vector...
-		WorldTransform = BackEndRecoilStorage * Grip.RelativeTransform * Grip.AdditionTransform * ParentTransform;
+		FVector Pivot = relTransform.GetLocation() + PivotOffset;
+		const FTransform PivotToWorld = FTransform(FQuat::Identity, Pivot);
+		const FTransform WorldToPivot = FTransform(FQuat::Identity, -Pivot);
+
+		WorldTransform = WorldToPivot * BackEndRecoilStorage * PivotToWorld * Grip.RelativeTransform * Grip.AdditionTransform * ParentTransform;
 	}
 	else
 		WorldTransform = Grip.RelativeTransform * Grip.AdditionTransform * ParentTransform;
@@ -199,9 +206,16 @@ bool UGS_GunTools::GetWorldTransform_Implementation
 				}
 
 				// Adjust the mount location to follow the Z of the primary hand
-				FVector WorldTransVec = MountWorldTransform.GetTranslation();
-				WorldTransVec.Z = ParentTransform.GetTranslation().Z;
-				MountWorldTransform.SetLocation(WorldTransVec);
+				if (VirtualStockSettings.bAdjustZOfStockToPrimaryHand)
+				{
+					FVector WorldTransVec = MountWorldTransform.GetTranslation();
+
+					if (WorldTransVec.Z >= ParentTransform.GetTranslation().Z)
+					{
+						WorldTransVec.Z = ParentTransform.GetTranslation().Z;
+						MountWorldTransform.SetLocation(WorldTransVec);
+					}
+				}
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 				if (VirtualStockSettings.bDebugDrawVirtualStock)

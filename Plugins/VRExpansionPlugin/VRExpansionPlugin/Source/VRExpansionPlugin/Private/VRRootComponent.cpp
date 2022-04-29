@@ -21,6 +21,7 @@ DEFINE_LOG_CATEGORY(LogVRRootComponent);
 
 DECLARE_CYCLE_STAT(TEXT("VRRootMovement"), STAT_VRRootMovement, STATGROUP_VRRootComponent);
 DECLARE_CYCLE_STAT(TEXT("PerformOverlapQueryVR Time"), STAT_PerformOverlapQueryVR, STATGROUP_VRRootComponent);
+DECLARE_CYCLE_STAT(TEXT("UpdateOverlapsVRRoot Time"), STAT_UpdateOverlapsVRRoot, STATGROUP_VRRootComponent);
 
 typedef TArray<const FOverlapInfo*, TInlineAllocator<8>> TInlineOverlapPointerArray;
 
@@ -543,7 +544,11 @@ void UVRRootComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, 
 
 	// Skip updates and stay in place if we have paused tracking to the HMD
 	if (bPauseTracking)
+	{
+		bHadRelativeMovement = false;
+		DifferenceFromLastFrame = FVector::ZeroVector;
 		return;
+	}
 
 	UVRBaseCharacterMovementComponent * CharMove = nullptr;
 
@@ -555,7 +560,12 @@ void UVRRootComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, 
 
 	if (IsLocallyControlled())
 	{
-		if (OptionalWaistTrackingParent.IsValid())
+		if (owningVRChar && owningVRChar->bTrackingPaused)
+		{
+			curCameraLoc = owningVRChar->PausedTrackingLoc;
+			curCameraRot = FRotator(0.f, owningVRChar->PausedTrackingRot, 0.f);
+		}
+		else if (OptionalWaistTrackingParent.IsValid())
 		{
 			FTransform NewTrans = IVRTrackedParentInterface::Default_GetWaistOrientationAndPosition(OptionalWaistTrackingParent);
 			curCameraLoc = NewTrans.GetTranslation();
@@ -676,7 +686,12 @@ void UVRRootComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, 
 	}
 	else
 	{
-		if (TargetPrimitiveComponent)
+		if (owningVRChar && owningVRChar->bTrackingPaused)
+		{
+			curCameraLoc = owningVRChar->PausedTrackingLoc;
+			curCameraRot = FRotator(0.f, owningVRChar->PausedTrackingRot, 0.f);
+		}
+		else if (TargetPrimitiveComponent)
 		{
 			curCameraRot = TargetPrimitiveComponent->GetRelativeRotation();
 			curCameraLoc = TargetPrimitiveComponent->GetRelativeLocation();
@@ -947,6 +962,14 @@ bool UVRRootComponent::MoveComponentImpl(const FVector& Delta, const FQuat& NewR
 		return false;
 	}
 
+	const bool bSkipPhysicsMove = ((MoveFlags & MOVECOMP_SkipPhysicsMove) != MOVECOMP_NoFlags);
+
+	if (!this->IsSimulatingPhysics() && bSkipPhysicsMove)
+	{
+		// Phys thread is updating this when we don't want it to, stop it chaos!
+		return false;
+	}
+
 	ConditionalUpdateComponentToWorld();
 
 	// Init HitResult
@@ -978,7 +1001,7 @@ bool UVRRootComponent::MoveComponentImpl(const FVector& Delta, const FQuat& NewR
 		DeltaSizeSq = 0.f;
 	}
 
-	const bool bSkipPhysicsMove = ((MoveFlags & MOVECOMP_SkipPhysicsMove) != MOVECOMP_NoFlags);
+	//const bool bSkipPhysicsMove = ((MoveFlags & MOVECOMP_SkipPhysicsMove) != MOVECOMP_NoFlags);
 
 	// WARNING: HitResult is only partially initialized in some paths. All data is valid only if bFilledHitResult is true.
 	FHitResult BlockingHit(NoInit);
@@ -1183,11 +1206,11 @@ bool UVRRootComponent::MoveComponentImpl(const FVector& Delta, const FQuat& NewR
 				bool bHasEndOverlaps = false;
 				if (bRotationOnly)
 				{
-					bHasEndOverlaps = ConvertRotationOverlapsToCurrentOverlaps(OverlapsAtEndLocation, OverlappingComponents);
+				//	bHasEndOverlaps = ConvertRotationOverlapsToCurrentOverlaps(OverlapsAtEndLocation, OverlappingComponents);
 				}
 				else
-				{
-					bHasEndOverlaps = ConvertSweptOverlapsToCurrentOverlaps(OverlapsAtEndLocation, PendingOverlaps, 0, GetComponentLocation(), GetComponentQuat());
+				{		
+				//	bHasEndOverlaps = ConvertSweptOverlapsToCurrentOverlaps(OverlapsAtEndLocation, PendingOverlaps, 0, OffsetComponentToWorld.GetLocation(), GetComponentQuat());
 				}
 				TOverlapArrayView PendingOverlapsView(PendingOverlaps);
 				TOverlapArrayView OverlapsAtEndView(OverlapsAtEndLocation);
@@ -1237,6 +1260,7 @@ bool UVRRootComponent::MoveComponentImpl(const FVector& Delta, const FQuat& NewR
 bool UVRRootComponent::UpdateOverlapsImpl(const TOverlapArrayView* NewPendingOverlaps, bool bDoNotifies, const TOverlapArrayView* OverlapsAtEndLocation)
 {
 	//SCOPE_CYCLE_COUNTER(STAT_UpdateOverlaps);
+	SCOPE_CYCLE_COUNTER(STAT_UpdateOverlapsVRRoot);
 	SCOPE_CYCLE_UOBJECT(ComponentScope, this);
 
 	// if we haven't begun play, we're still setting things up (e.g. we might be inside one of the construction scripts)
@@ -1280,9 +1304,9 @@ bool UVRRootComponent::UpdateOverlapsImpl(const TOverlapArrayView* NewPendingOve
 			
 			TArray<FOverlapInfo> OverlapsAtEnd;
 			TOverlapArrayView OverlapsAtEndLoc;
-			if ((!OverlapsAtEndLocation || OverlapsAtEndLocation->Num() < 1) && NewPendingOverlaps && NewPendingOverlaps->Num() > 0)
+			if (/*(!OverlapsAtEndLocation || OverlapsAtEndLocation->Num() < 1) &&*/ NewPendingOverlaps && NewPendingOverlaps->Num() > 0)
 			{
-				ConvertSweptOverlapsToCurrentOverlaps(OverlapsAtEnd, *NewPendingOverlaps, 0, OffsetComponentToWorld.GetLocation(), GetComponentQuat());
+				ConvertSweptOverlapsToCurrentOverlaps(OverlapsAtEnd, *NewPendingOverlaps, -1, OffsetComponentToWorld.GetLocation(), GetComponentQuat());
 				OverlapsAtEndLoc = TOverlapArrayView(OverlapsAtEnd);
 				OverlapsAtEndLocationPtr = &OverlapsAtEndLoc;
 			}
@@ -1465,7 +1489,21 @@ bool UVRRootComponent::ConvertSweptOverlapsToCurrentOverlaps(
 	TArray<FOverlapInfo, AllocatorType>& OverlapsAtEndLocation, const TOverlapArrayView& SweptOverlaps, int32 SweptOverlapsIndex,
 	const FVector& EndLocation, const FQuat& EndRotationQuat)
 {
+	if (SweptOverlapsIndex == -1)
+	{
+		SweptOverlapsIndex = 0;
+	}
+	else
+	{
+		return false;
+	}
+
 	checkSlow(SweptOverlapsIndex >= 0);
+
+	// Override location check with our own
+	//GenerateOffsetToWorld();
+	FVector EndLocationVR = OffsetComponentToWorld.GetLocation();
+
 
 	bool bResult = false;
 	const bool bForceGatherOverlaps = !ShouldCheckOverlapFlagToQueueOverlaps(*this);
@@ -1501,7 +1539,7 @@ bool UVRRootComponent::ConvertSweptOverlapsToCurrentOverlaps(
 							// SkeletalMeshComponent does not support this operation, and would return false in the test when an actual query could return true.
 							return false;
 						}
-						else if (OtherPrimitive->ComponentOverlapComponent(this, EndLocation, EndRotationQuat, UnusedQueryParams))
+						else if (OtherPrimitive->ComponentOverlapComponent(this, EndLocationVR, EndRotationQuat, UnusedQueryParams))
 						{
 							OverlapsAtEndLocation.Add(OtherOverlap);
 						}

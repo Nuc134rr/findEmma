@@ -82,7 +82,7 @@ public:
 		TEnumAsByte<EVRAxis::Type> MirrorAxis;
 
 	// Axis to flip on when mirroring this socket
-	UPROPERTY(EditDefaultsOnly, Category = "Hand Socket Data|Mirroring|Advanced")
+	UPROPERTY(VisibleDefaultsOnly, Category = "Hand Socket Data|Mirroring|Advanced")
 		TEnumAsByte<EVRAxis::Type> FlipAxis;
 
 	// Relative placement of the hand to this socket
@@ -117,6 +117,15 @@ public:
 	// If true then this hand socket will always be considered "in range" and checked against others for lowest distance
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hand Socket Data")
 		bool bAlwaysInRange;
+
+	// If true and there are multiple hand socket components in range with this setting
+	// Then the default behavior will compare closest rotation on them all to pick one
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hand Socket Data")
+		bool bMatchRotation;
+
+	// If true then the hand socket will not be considered for search operations
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hand Socket Data")
+		bool bDisabled;
 
 	// Snap distance to use if you want to override the defaults.
 	// Will be ignored if == 0.0f or bAlwaysInRange is true
@@ -166,6 +175,20 @@ public:
 	// Returns the target relative transform of the hand
 	//UFUNCTION(BlueprintCallable, Category = "Hand Socket Data")
 	FTransform GetHandRelativePlacement();
+
+	inline void MirrorHandTransform(FTransform& ReturnTrans, FTransform& relTrans)
+	{
+		if (bOnlyFlipRotation)
+		{
+			ReturnTrans.SetTranslation(ReturnTrans.GetTranslation() - relTrans.GetTranslation());
+			ReturnTrans.Mirror(GetAsEAxis(MirrorAxis), GetCrossAxis());
+			ReturnTrans.SetTranslation(ReturnTrans.GetTranslation() + relTrans.GetTranslation());
+		}
+		else
+		{
+			ReturnTrans.Mirror(GetAsEAxis(MirrorAxis), GetCrossAxis());
+		}
+	}
 
 	inline TEnumAsByte<EAxis::Type> GetAsEAxis(TEnumAsByte<EVRAxis::Type> InAxis)
 	{
@@ -231,25 +254,41 @@ public:
 
 	inline TEnumAsByte<EAxis::Type> GetCrossAxis()
 	{
-		if (FlipAxis != EVRAxis::Z && MirrorAxis != EVRAxis::Z)
-		{
-			return EAxis::Z;
-		}
-		else if (FlipAxis != EVRAxis::Y && MirrorAxis != EVRAxis::Y)
-		{
-			return EAxis::Y;
-		}
-		else if (FlipAxis != EVRAxis::X && MirrorAxis != EVRAxis::X)
+		if (MirroredScale.X < 0)
 		{
 			return EAxis::X;
 		}
+		else if (MirroredScale.Z < 0)
+		{
+			return EAxis::Z;
+		}
+		else if (MirroredScale.Y < 0)
+		{
+			return EAxis::Y;
+		}
 
-		return EAxis::None;
+		return GetAsEAxis(FlipAxis);
+
+		/*if (FlipAxis == EVRAxis::Y)
+		{
+			return EAxis::Z;
+		}
+		else if (FlipAxis == EVRAxis::Z)
+		{
+			return EAxis::X;
+		}
+		else if (FlipAxis == EVRAxis::X)
+		{
+			return EAxis::Y;
+		}*/
+
+		//return EAxis::None;
 	}
 	// Returns the target relative transform of the hand to the gripped object
 	// If you want the transform mirrored you need to pass in which hand is requesting the information
+	// If UseParentScale is true then we will scale the value by the parent scale (generally only for when not using absolute hand scale)
 	UFUNCTION(BlueprintCallable, Category = "Hand Socket Data")
-	FTransform GetMeshRelativeTransform(bool bIsRightHand);
+	FTransform GetMeshRelativeTransform(bool bIsRightHand, bool bUseParentScale = false);
 
 	// Returns the defined hand socket component (if it exists, you need to valid check the return!
 	// If it is a valid return you can then cast to your projects base socket class and handle whatever logic you want
@@ -285,7 +324,7 @@ public:
 		return nullptr;
 	}
 
-	virtual FTransform GetHandSocketTransform(UGripMotionControllerComponent* QueryController);
+	virtual FTransform GetHandSocketTransform(UGripMotionControllerComponent* QueryController, bool bIgnoreOnlySnapMesh = false);
 
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -340,10 +379,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hand Visualization")
 		bool bMirrorVisualizationMesh;
 
+#endif
+
 	// Scale to apply when mirroring the hand, adjust to visualize your off hand correctly
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hand Visualization")
 		FVector MirroredScale;
 
+#if WITH_EDITORONLY_DATA
 	// Material to apply to the hand
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hand Visualization")
 		UMaterial* HandPreviewMaterial;

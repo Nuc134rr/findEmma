@@ -83,11 +83,10 @@ public:
 
 struct FContactModBodyInstancePair
 {
-	bool bBody1IgnoreEntireActor;
-	bool bBody2IgnoreEntireActor;
-
 	FPhysicsActorHandle Actor1;
 	FPhysicsActorHandle Actor2;
+	TWeakObjectPtr<UPrimitiveComponent> Prim1;
+	TWeakObjectPtr<UPrimitiveComponent> Prim2;
 
 	FORCEINLINE bool operator==(const FContactModBodyInstancePair &Other) const
 	{

@@ -39,6 +39,15 @@ public:
 		bool bJustTeleportedGrips;
 
 	UPROPERTY(Transient)
+		bool bPausedTracking;
+
+	UPROPERTY(Transient)
+		FVector_NetQuantize100 PausedTrackingLoc;
+
+	UPROPERTY(Transient)
+		float PausedTrackingRot;
+
+	UPROPERTY(Transient)
 		AActor* Owner;
 
 	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
@@ -46,14 +55,33 @@ public:
 		FRepMovement BaseSettings = Owner ? Owner->GetReplicatedMovement() : FRepMovement();
 
 		// pack bitfield with flags
-		uint8 Flags = (bSimulatedPhysicSleep << 0) | (bRepPhysics << 1) | (bJustTeleported << 2) | (bJustTeleportedGrips << 3);
-		Ar.SerializeBits(&Flags, 4);
+		uint8 Flags = (bSimulatedPhysicSleep << 0) | (bRepPhysics << 1) | (bJustTeleported << 2) | (bJustTeleportedGrips << 3) | (bPausedTracking << 4);
+		Ar.SerializeBits(&Flags, 5);
 		bSimulatedPhysicSleep = (Flags & (1 << 0)) ? 1 : 0;
 		bRepPhysics = (Flags & (1 << 1)) ? 1 : 0;
 		bJustTeleported = (Flags & (1 << 2)) ? 1 : 0;
 		bJustTeleportedGrips = (Flags & (1 << 3)) ? 1 : 0;
+		bPausedTracking = (Flags & (1 << 4)) ? 1 : 0;
 
 		bOutSuccess = true;
+
+		if (bPausedTracking)
+		{
+			bOutSuccess &= PausedTrackingLoc.NetSerialize(Ar, Map, bOutSuccess);
+
+			uint16 Yaw = 0;
+			if (Ar.IsSaving())
+			{
+				Yaw = FRotator::CompressAxisToShort(PausedTrackingRot);
+				Ar << Yaw;
+			}
+			else
+			{
+				Ar << Yaw;
+				PausedTrackingRot = Yaw;
+			}
+
+		}
 
 		// update location, rotation, linear velocity
 		bOutSuccess &= SerializeQuantizedVector(Ar, Location, BaseSettings.LocationQuantizationLevel);
@@ -250,7 +278,7 @@ public:
 	UPROPERTY(Transient, DuplicateTransient)
 		AVRPlayerController* OwningVRPlayerController;
 
-	virtual void CacheInitialMeshOffset(FVector MeshRelativeLocation, FRotator MeshRelativeRotation) override;
+	//virtual void CacheInitialMeshOffset(FVector MeshRelativeLocation, FRotator MeshRelativeRotation) override;
 	virtual void PostInitializeComponents() override;
 
 	virtual void PossessedBy(AController* NewController);
@@ -263,6 +291,9 @@ public:
 
 	bool bFlagTeleported;
 	bool bFlagTeleportedGrips;
+	bool bTrackingPaused;
+	FVector PausedTrackingLoc;
+	float PausedTrackingRot;
 
 	// Injecting our custom teleport notification
 	virtual void OnRep_ReplicatedMovement() override;
@@ -499,6 +530,11 @@ public:
 	UPROPERTY(Category = VRBaseCharacter, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 		USceneComponent * NetSmoother;
 
+	// This is just a helper proxy component after the net smoother to make it easier to move tracking around for people
+	// but still maintain the netsmoothers functionality
+	UPROPERTY(Category = VRBaseCharacter, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+		USceneComponent* VRProxyComponent;
+
 	UPROPERTY(Category = VRBaseCharacter, VisibleAnywhere, Transient, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 		UVRBaseCharacterMovementComponent * VRMovementReference;
 
@@ -526,8 +562,11 @@ public:
 	/** Name of the ParentRelativeAttachment component. Use this name if you want to use a different class (with ObjectInitializer.SetDefaultSubobjectClass). */
 	static FName ParentRelativeAttachmentComponentName;
 	
-	/** Name of the ParentRelativeAttachment component. Use this name if you want to use a different class (with ObjectInitializer.SetDefaultSubobjectClass). */
+	/** Name of the net smoother component. Use this name if you want to use a different class (with ObjectInitializer.SetDefaultSubobjectClass). */
 	static FName SmoothingSceneParentComponentName;
+
+	/** Name of the vr proxy component. Use this name if you want to use a different class (with ObjectInitializer.SetDefaultSubobjectClass). */
+	static FName VRProxyComponentName;
 
 	/*
 	A helper function that offsets a given vector by the roots collision location
@@ -545,8 +584,8 @@ public:
 
 	// Event triggered when a move action is performed, this is ran just prior to PerformMovement in the character tick
 	UFUNCTION(BlueprintNativeEvent, Category = "VRMovement")
-		void OnCustomMoveActionPerformed(EVRMoveAction MoveActionType, FVector MoveActionVector, FRotator MoveActionRotator);
-	virtual void OnCustomMoveActionPerformed_Implementation(EVRMoveAction MoveActionType, FVector MoveActionVector, FRotator MoveActionRotator);
+		void OnCustomMoveActionPerformed(EVRMoveAction MoveActionType, FVector MoveActionVector, FRotator MoveActionRotator, uint8 MoveActionFlags);
+	virtual void OnCustomMoveActionPerformed_Implementation(EVRMoveAction MoveActionType, FVector MoveActionVector, FRotator MoveActionRotator, uint8 MoveActionFlags);
 
 	// Event triggered when beginning to be pushed back from a wall
 	// bHadLocomotionInput means that the character was moving itself

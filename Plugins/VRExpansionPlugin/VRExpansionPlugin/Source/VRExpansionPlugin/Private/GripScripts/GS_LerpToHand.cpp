@@ -21,6 +21,7 @@ UGS_LerpToHand::UGS_LerpToHand(const FObjectInitializer& ObjectInitializer) :
 	MinDistanceForLerp = 0.0f;
 	MinSpeedForLerp = 0.f;
 	MaxSpeedForLerp = 0.f;
+	TargetGrip = INVALID_VRGRIP_ID;
 }
 
 //void UGS_InteractibleSettings::BeginPlay_Implementation() {}
@@ -28,12 +29,15 @@ void UGS_LerpToHand::OnGrip_Implementation(UGripMotionControllerComponent * Grip
 {
 	const UVRGlobalSettings& VRSettings = *GetDefault<UVRGlobalSettings>();
 
+	// Removed this, let per object scripts overide
 	// Dont run if the global lerping is enabled
-	if (VRSettings.bUseGlobalLerpToHand)
+	/*if (VRSettings.bUseGlobalLerpToHand)
 	{
 		bIsActive = false;
 		return;
-	}
+	}*/
+
+	TargetGrip = GripInformation.GripID;
 
 	OnGripTransform = GetParentTransform(true, GripInformation.GrippedBoneName);
 	UObject* ParentObj = this->GetParent();
@@ -67,6 +71,11 @@ void UGS_LerpToHand::OnGrip_Implementation(UGripMotionControllerComponent * Grip
 		LerpSpeed = ((1.f / LerpDuration) * LerpScaler);
 
 		OnLerpToHandBegin.Broadcast();
+
+		if (FBPActorGripInformation* GripInfo = GrippingController->GetGripPtrByID(GripInformation.GripID))
+		{
+			GripInfo->bIsLerping = true;
+		}
 	}
 
 
@@ -77,7 +86,11 @@ void UGS_LerpToHand::OnGrip_Implementation(UGripMotionControllerComponent * Grip
 
 void UGS_LerpToHand::OnGripRelease_Implementation(UGripMotionControllerComponent * ReleasingController, const FBPActorGripInformation & GripInformation, bool bWasSocketed) 
 {
-	bIsActive = false;
+	if(GripInformation.GripID == TargetGrip)
+	{ 
+		TargetGrip = INVALID_VRGRIP_ID;
+		bIsActive = false;
+	}
 }
 
 bool UGS_LerpToHand::GetWorldTransform_Implementation
@@ -96,8 +109,10 @@ bool UGS_LerpToHand::GetWorldTransform_Implementation
 	if (!root)
 		return false;
 
-	if (LerpDuration <= 0.f)
+	if (LerpDuration <= 0.f || !Grip.bIsLerping)
 	{
+		Grip.bIsLerping = false;
+		GrippingController->OnLerpToHandFinished.Broadcast(Grip);
 		bIsActive = false;
 	}
 
@@ -163,6 +178,8 @@ bool UGS_LerpToHand::GetWorldTransform_Implementation
 	if (OrigAlpha == 1.0f)
 	{
 		OnLerpToHandFinished.Broadcast();
+		Grip.bIsLerping = false;
+		GrippingController->OnLerpToHandFinished.Broadcast(Grip);
 		CurrentLerpTime = 0.0f;
 		bIsActive = false;
 	}

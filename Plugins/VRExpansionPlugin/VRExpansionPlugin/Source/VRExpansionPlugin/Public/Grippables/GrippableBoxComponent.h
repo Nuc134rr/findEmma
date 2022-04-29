@@ -34,6 +34,12 @@ public:
 	UPROPERTY(EditAnywhere, Replicated, BlueprintReadOnly, Instanced, Category = "VRGripInterface")
 		TArray<class UVRGripScriptBase *> GripLogicScripts;
 
+	// If true then the grip script array will be considered for replication, if false then it will not
+	// This is an optimization for when you have a lot of grip scripts in use, you can toggle this off in cases
+	// where the object will never have a replicating script
+	UPROPERTY(EditAnywhere, Replicated, BlueprintReadWrite, Category = "VRGripInterface")
+		bool bReplicateGripScripts;
+
 	bool ReplicateSubobjects(UActorChannel* Channel, class FOutBunch *Bunch, FReplicationFlags *RepFlags) override;
 
 	// Sets the Deny Gripping variable on the FBPInterfaceSettings struct
@@ -147,6 +153,9 @@ public:
 
 	// Sets is held, used by the plugin
 	virtual void SetHeld_Implementation(UGripMotionControllerComponent* HoldingController, uint8 GripID, bool bIsHeld) override;
+
+	// Interface function used to throw the delegates that is invisible to blueprints so that it can't be overridden
+	virtual void Native_NotifyThrowGripDelegates(UGripMotionControllerComponent* Controller, bool bGripped, const FBPActorGripInformation& GripInformation, bool bWasSocketed = false) override;
 
 	// Returns if the object wants to be socketed
 	virtual bool RequestsSocketing_Implementation(USceneComponent*& ParentToSocketTo, FName& OptionalSocketName, FTransform_NetQuantize& RelativeTransform) override;

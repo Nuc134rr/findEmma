@@ -28,6 +28,8 @@ UHandSocketComponent::UHandSocketComponent(const FObjectInitializer& ObjectIniti
 
 	HandRelativePlacement = FTransform::Identity;
 	bAlwaysInRange = false;
+	bDisabled = false;
+	bMatchRotation = false;
 	OverrideDistance = 0.0f;
 	SlotPrefix = FName("VRGripP");
 	bUseCustomPoseDeltas = false;
@@ -351,11 +353,11 @@ FTransform UHandSocketComponent::GetHandRelativePlacement()
 	return HandRelativePlacement;
 }
 
-FTransform UHandSocketComponent::GetHandSocketTransform(UGripMotionControllerComponent* QueryController)
+FTransform UHandSocketComponent::GetHandSocketTransform(UGripMotionControllerComponent* QueryController, bool bIgnoreOnlySnapMesh)
 {
 	// Optionally mirror for left hand
 
-	if (bOnlySnapMesh)
+	if (!bIgnoreOnlySnapMesh && bOnlySnapMesh)
 	{
 		if (!QueryController)
 		{
@@ -401,39 +403,41 @@ FTransform UHandSocketComponent::GetHandSocketTransform(UGripMotionControllerCom
 	return this->GetComponentTransform();
 }
 
-FTransform UHandSocketComponent::GetMeshRelativeTransform(bool bIsRightHand)
+FTransform UHandSocketComponent::GetMeshRelativeTransform(bool bIsRightHand, bool bUseParentScale)
 {
 	// Optionally mirror for left hand
 
-	FTransform relTrans = this->GetRelativeTransform();
-	FTransform HandPlacement = GetHandRelativePlacement();
+	// Failsafe
+	if (!this->GetAttachParent())
+		return FTransform::Identity;
 
-	if (this->IsUsingAbsoluteScale() && !bDecoupleMeshPlacement)
+	FTransform relTrans = this->GetRelativeTransform();
+	FTransform HandTrans = GetHandRelativePlacement();
+	FTransform ReturnTrans = FTransform::Identity;
+
+	// Fix the scale
+	if (!bUseParentScale && this->IsUsingAbsoluteScale() /*&& !bDecoupleMeshPlacement*/)
 	{
-		if (this->GetAttachParent())
-		{
-			HandPlacement.ScaleTranslation(/*FVector(1.0f) / */this->GetAttachParent()->GetRelativeScale3D());
-		}
+		FVector ParentScale = this->GetAttachParent()->GetComponentScale();
+		// Take parent scale out of our relative transform early
+		relTrans.ScaleTranslation(ParentScale);
+		ReturnTrans = HandTrans * relTrans;
+		// We add in the inverse of the parent scale to adjust the hand mesh
+		ReturnTrans.ScaleTranslation((FVector(1.0f) / ParentScale));
+		ReturnTrans.SetScale3D(FVector(1.0f));
+	}
+	else
+	{
+		ReturnTrans = HandTrans * relTrans;
 	}
 
-	FTransform ReturnTrans = (HandPlacement * relTrans);
-
+	// If we should mirror the transform, do it now that it is in our parent relative space
 	if ((bFlipForLeftHand && (bLeftHandDominant == bIsRightHand)))
 	{
-
-		if (!bOnlyFlipRotation)
-		{
-			ReturnTrans.SetTranslation(ReturnTrans.GetTranslation().MirrorByVector(GetMirrorVector()));
-		}
-
-		FRotationMatrix test(ReturnTrans.GetRotation().Rotator());
-		test.Mirror(GetAsEAxis(MirrorAxis), GetCrossAxis());
-		//test.Mirror(MirrorAxis, FlipAxis);
-		ReturnTrans.SetRotation(test.ToQuat());
-		//ReturnTrans.Mirror(MirrorAxis, FlipAxis);
+		//FTransform relTrans = this->GetRelativeTransform();
+		MirrorHandTransform(ReturnTrans, relTrans);
 	}
 
-	FTransform CorrectTrans = ReturnTrans.GetRelativeTransform(relTrans);
 
 	return ReturnTrans;
 }
@@ -473,6 +477,7 @@ void UHandSocketComponent::OnRegister()
 				HandVisualizerComponent->SetComponentTickEnabled(false);
 				HandVisualizerComponent->SetHiddenInGame(true);
 				HandVisualizerComponent->RegisterComponentWithWorld(GetWorld());
+				//HandVisualizerComponent->SetUsingAbsoluteScale(true);
 
 				if (VisualizationMesh)
 				{
@@ -487,34 +492,17 @@ void UHandSocketComponent::OnRegister()
 				{
 					FTransform relTrans = this->GetRelativeTransform();
 					FTransform HandPlacement = GetHandRelativePlacement();
+					FTransform ReturnTrans = (HandPlacement * relTrans);
 
-					if (this->IsUsingAbsoluteScale() && !bDecoupleMeshPlacement)
-					{
-						HandPlacement.ScaleTranslation(/*FVector(1.0f) / */ParentAttach->GetRelativeScale3D());
+					if (bMirrorVisualizationMesh)//(bFlipForLeftHand && !bIsRightHand))
+					{					
+						MirrorHandTransform(ReturnTrans, relTrans);
 					}
 
 					if ((bLeftHandDominant && !bMirrorVisualizationMesh) || (!bLeftHandDominant && bMirrorVisualizationMesh))
 					{
-						HandPlacement.SetScale3D(HandPlacement.GetScale3D() * MirroredScale);
+						ReturnTrans.SetScale3D(ReturnTrans.GetScale3D() * MirroredScale);
 					}
-
-
-					FTransform ReturnTrans = (HandPlacement * relTrans);
-
-					if (bMirrorVisualizationMesh)//(bFlipForLeftHand && !bIsRightHand))
-					{
-						if (!bOnlyFlipRotation)
-						{
-							ReturnTrans.SetTranslation(ReturnTrans.GetTranslation().MirrorByVector(GetMirrorVector()));
-						}
-
-						FRotationMatrix test(ReturnTrans.GetRotation().Rotator());
-						test.Mirror(GetAsEAxis(MirrorAxis), GetCrossAxis());
-						ReturnTrans.SetRotation(test.ToQuat());
-						//ReturnTrans.Mirror(MirrorAxis, FlipAxis);
-					}
-
-					FTransform RelativeTrans = ReturnTrans;
 
 					HandVisualizerComponent->SetRelativeTransform(ReturnTrans.GetRelativeTransform(relTrans)/*newRel*/);
 				}
@@ -549,6 +537,12 @@ void UHandSocketComponent::PoseVisualizationToAnimation(bool bForceRefresh)
 
 	for (int32 i = 0; i < Bones; i++)
 	{
+		if (!HandTargetAnimation && !bUseCustomPoseDeltas)
+		{
+			HandVisualizerComponent->ResetBoneTransformByName(BonesNames[i]);
+			continue;
+		}
+
 		FName ParentBone = HandVisualizerComponent->GetParentBone(BonesNames[i]);
 		FTransform ParentTrans = FTransform::Identity;
 		if (ParentBone != NAME_None)
@@ -673,10 +667,11 @@ void UHandSocketComponent::PostEditChangeProperty(FPropertyChangedEvent& Propert
 			PropertyThatChanged->GetFName() == GET_MEMBER_NAME_CHECKED(UHandSocketComponent, VisualizationMesh)
 			)
 		{
+			PoseVisualizationToAnimation(true);
 		}
 		else if (PropertyThatChanged->GetFName() == GET_MEMBER_NAME_CHECKED(UHandSocketComponent, CustomPoseDeltas))
 		{
-			//PoseVisualizationToAnimation(true);
+			PoseVisualizationToAnimation(true);
 		}
 #endif
 	}

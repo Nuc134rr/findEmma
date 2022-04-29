@@ -100,8 +100,10 @@ public:
 		bool bIsLerping;
 
 	// For momentum retention
-	float MomentumAtDrop;
-	float LastSliderProgress;
+	FVector MomentumAtDrop;
+	FVector LastSliderProgress;
+	float SplineMomentumAtDrop;
+	float SplineLastSliderProgress;
 
 	// Gets filled in with the current slider location progress
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "VRSliderComponent")
@@ -128,7 +130,7 @@ public:
 		bool bUseLegacyLogic;
 
 	// How far away from an event state before the slider allows throwing the same state again, default of 1.0 means it takes a full toggle
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "VRSliderComponent", meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VRSliderComponent", meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
 		float EventThrowThreshold;
 	bool bHitEventThreshold;
 
@@ -347,6 +349,9 @@ public:
 
 	// Returns if the object is held and if so, which controllers are holding it
 	void IsHeld_Implementation(TArray<FBPGripPair>& CurHoldingControllers, bool& bCurIsHeld) override;
+
+	// Interface function used to throw the delegates that is invisible to blueprints so that it can't be overridden
+	virtual void Native_NotifyThrowGripDelegates(UGripMotionControllerComponent* Controller, bool bGripped, const FBPActorGripInformation& GripInformation, bool bWasSocketed = false) override;
 
 	// Sets is held, used by the plugin
 	void SetHeld_Implementation(UGripMotionControllerComponent* NewHoldingController, uint8 GripID, bool bNewIsHeld) override;

@@ -245,7 +245,16 @@ bool UVRLeverComponent::CheckAutoDrop(UGripMotionControllerComponent* GrippingCo
 	// Converted to a relative value now so it should be correct
 	if (BreakDistance > 0.f && GrippingController->HasGripAuthority(GripInformation) && FVector::DistSquared(InitialInteractorDropLocation, this->GetComponentTransform().InverseTransformPosition(GrippingController->GetPivotLocation())) >= FMath::Square(BreakDistance))
 	{
-		GrippingController->DropObjectByInterface(this, HoldingGrip.GripID);
+		if (GrippingController->OnGripOutOfRange.IsBound())
+		{
+			uint8 GripID = GripInformation.GripID;
+			GrippingController->OnGripOutOfRange.Broadcast(GripInformation, GripInformation.GripDistance);
+		}
+		else
+		{
+			GrippingController->DropObjectByInterface(this, HoldingGrip.GripID);
+		}
+
 		return true;
 	}
 
@@ -426,7 +435,7 @@ void UVRLeverComponent::OnGrip_Implementation(UGripMotionControllerComponent * G
 
 	this->SetComponentTickEnabled(true);
 
-	OnGripped.Broadcast(GrippingController, GripInformation);
+	//OnGripped.Broadcast(GrippingController, GripInformation);
 }
 
 void UVRLeverComponent::OnGripRelease_Implementation(UGripMotionControllerComponent * ReleasingController, const FBPActorGripInformation & GripInformation, bool bWasSocketed) 
@@ -451,7 +460,7 @@ void UVRLeverComponent::OnGripRelease_Implementation(UGripMotionControllerCompon
 		bReplicateMovement = bOriginalReplicatesMovement;
 	}
 
-	OnDropped.Broadcast(ReleasingController, GripInformation, bWasSocketed);
+	//OnDropped.Broadcast(ReleasingController, GripInformation, bWasSocketed);
 }
 
 void UVRLeverComponent::SetGripPriority(int NewGripPriority)
@@ -589,6 +598,18 @@ void UVRLeverComponent::IsHeld_Implementation(TArray<FBPGripPair> & CurHoldingCo
 	else
 	{
 		bCurIsHeld = false;
+	}
+}
+
+void UVRLeverComponent::Native_NotifyThrowGripDelegates(UGripMotionControllerComponent* Controller, bool bGripped, const FBPActorGripInformation& GripInformation, bool bWasSocketed)
+{
+	if (bGripped)
+	{
+		OnGripped.Broadcast(Controller, GripInformation);
+	}
+	else
+	{
+		OnDropped.Broadcast(Controller, GripInformation, bWasSocketed);
 	}
 }
 

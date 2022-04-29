@@ -347,15 +347,8 @@ void FHandSocketComponentDetails::OnLeftDominantUpdated(IDetailLayoutBuilder* La
 
 		FTransform ReturnTrans = (HandPlacement * relTrans);
 
-		if (!HandSocketComponent->bOnlyFlipRotation)
-		{
-			ReturnTrans.SetTranslation(ReturnTrans.GetTranslation().MirrorByVector(HandSocketComponent->GetMirrorVector()));
-		}
-
-		FRotationMatrix test(ReturnTrans.GetRotation().Rotator());
-		test.Mirror(HandSocketComponent->GetAsEAxis(HandSocketComponent->MirrorAxis), HandSocketComponent->GetCrossAxis());
-		ReturnTrans.SetRotation(test.ToQuat());
-
+		HandSocketComponent->MirrorHandTransform(ReturnTrans, relTrans);
+	
 		HandSocketComponent->Modify();
 		if (AActor* Owner = HandSocketComponent->GetOwner())
 		{
@@ -561,6 +554,9 @@ void FHandSocketComponentDetails::CustomizeDetails(IDetailLayoutBuilder& DetailB
 
 void FHandSocketComponentDetails::OnUpdateShowMesh(IDetailLayoutBuilder* LayoutBuilder)
 {
+	if (!HandSocketComponent.IsValid())
+		return;
+
 	TSharedPtr<FComponentVisualizer> Visualizer = GUnrealEd->FindComponentVisualizer(HandSocketComponent->GetClass());
 	FHandSocketVisualizer* HandVisualizer = (FHandSocketVisualizer*)Visualizer.Get();
 
