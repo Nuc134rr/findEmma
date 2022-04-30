@@ -3,7 +3,7 @@
 //Python to list functions in this class: 
 //for i in sorted(dir(unreal.ZspcCpp)):
 //print(i)
-
+/**
 
 #include "ZspcCpp.h"
 #include "IContentBrowserSingleton.h"

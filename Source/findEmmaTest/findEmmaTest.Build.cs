@@ -8,9 +8,9 @@ public class findEmmaTest : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "ContentBrowser" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "Core", "ContentBrowser" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "Core" });
 
 		PublicDependencyModuleNames.AddRange(new string[] { "VRExpansionPlugin" });
 

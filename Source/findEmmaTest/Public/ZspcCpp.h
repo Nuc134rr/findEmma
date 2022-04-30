@@ -1,14 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
-
+/**
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "ZspcCpp.generated.h"
 
-/**
- * 
- */
+
+ 
+ 
 UCLASS()
 class FINDEMMATEST_API UZspcCpp : public UBlueprintFunctionLibrary
 {
@@ -37,4 +37,4 @@ private:
 	UFUNCTION(BlueprintCallable, Category = "Unreal Python")
 	static TArray<FString> GetSubFolders(const FString Filepath);
 
-};
+};**/
